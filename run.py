@@ -15,7 +15,7 @@ bot = Bot(token=TG_API_BOT)
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     for i in range(1):
-        await message.answer(f"Курс aдоллара: {usd_rate:.2f} RUB")
+        await message.answer(f"Курс aдоллараa: {usd_rate:.2f} RUB")
         await asyncio.sleep(1)
 
 

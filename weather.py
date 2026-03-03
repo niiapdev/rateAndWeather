@@ -1,6 +1,7 @@
 import openmeteo_requests
 import pandas as pd
 import requests_cache
+from numpy.ma.core import around
 from retry_requests import retry
 
 
@@ -20,17 +21,22 @@ def get_weather():
     }
 
     responses = openmeteo.weather_api(url, params=params)
-    response = responses[0] 
+    response = responses[0]
 
     current = response.Current()
-    current_temp = int(current.Variables(0).Value())
+
+    #current_temp = int(current.Variables(0).Value())
+    current_temp = (current.Variables(0).Value())
 
     daily = response.Daily()
-    max_temp = int(daily.Variables(0).ValuesAsNumpy()[0])
-    min_temp = int(daily.Variables(1).ValuesAsNumpy()[0])
 
+
+    #max_temp = int(daily.Variables(0).ValuesAsNumpy()[0])
+    max_temp = (daily.Variables(0).ValuesAsNumpy()[0])
+    #min_temp = int(daily.Variables(1).ValuesAsNumpy()[0])
+    min_temp = (daily.Variables(1).ValuesAsNumpy()[0])
     return {
-        "current": current_temp,
-        "max": max_temp,
-        "min": min_temp,
+        "current": round(current_temp, 2),
+        "max": round(max_temp),
+        "min": round(min_temp),
     }

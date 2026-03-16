@@ -4,6 +4,7 @@ def main_kkb():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text='Запросить курс/прогноз сейчас', style='success')],
+            [KeyboardButton(text='Отменить рассылку', style='danger')]
         ],
         resize_keyboard = True,
         #input_field_placeholder='Выбери чифру или напиши свою...'
@@ -14,11 +15,11 @@ def main_kkb():
 def select_number():
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text='1', callback_data='1')],
-            [InlineKeyboardButton(text='6', callback_data='6')],
-            [InlineKeyboardButton(text='12', callback_data='12')],
-            [InlineKeyboardButton(text='18', callback_data='18')],
-            [InlineKeyboardButton(text='24', callback_data='24')],
+            [InlineKeyboardButton(text='⏰ 1h', callback_data='1')],
+            [InlineKeyboardButton(text='⏰ 6h', callback_data='6')],
+            [InlineKeyboardButton(text='⏰ 12h', callback_data='12')],
+            [InlineKeyboardButton(text='⏰ 18h', callback_data='18')],
+            [InlineKeyboardButton(text='⏰ 24h', callback_data='24')],
         ]
     )
     return keyboard

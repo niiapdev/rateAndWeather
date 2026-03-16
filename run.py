@@ -5,6 +5,8 @@ from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+
+
 from config import TG_API_BOT
 
 from main import get_rate
@@ -18,18 +20,19 @@ bot = Bot(token=TG_API_BOT)
 
 user_data = {}
 
-task_input = '"Через сколько часов прислать обновленную инфу?⏰\nВведи число (например: 24):"'
+task_input = 'Через сколько часов прислать обновленную инфу?⏰\n\nНажми на кнопку или↔️\nВведи число (например: 24):'
 
 class SetInterval(StatesGroup):
     waiting_for_hours = State()
 
-async def pereodic_sender(chat_id: int, interval_hours: int):
-    while True:
-        await asyncio.sleep(interval_hours * 36)
-        weather = get_weather()
-        rate = get_rate()
-        if rate is not None:
-            await bot.send_message(
+async def periodic_sender(chat_id: int, interval_hours: int):
+    try:
+        while True:
+            await asyncio.sleep(interval_hours * 36)
+            weather = get_weather()
+            rate = get_rate()
+            if rate is not None:
+                await bot.send_message(
                 chat_id,
                 f"""
 💵 Доллар: {rate['usd']} RUB
@@ -37,6 +40,9 @@ async def pereodic_sender(chat_id: int, interval_hours: int):
 🌡 Температура сейчас: {weather['current']}℃
 """
         )
+
+    except asyncio.CancelledError:
+        return
 
 async def send_rate_weather(message: Message):
     weather = get_weather()
@@ -65,8 +71,40 @@ async def cmd_start(message: Message, state: FSMContext):
 @router.message(F.text == 'Запросить курс/прогноз сейчас')
 async def cmd_wr(message: Message, state: FSMContext):
     await send_rate_weather(message)
-    await message.answer(task_input)
+    await message.answer(task_input,
+    reply_markup = select_number()
+    )
     await state.set_state(SetInterval.waiting_for_hours)
+
+@router.message(F.text == 'Отменить рассылку')
+async def cmd_clear(message: Message):
+    chat_id = message.chat.id
+    if chat_id in user_data:
+        user_data[chat_id]["task"].cancel()
+        del user_data[chat_id]
+        await message.answer('Рассылка была успешно отменена🛑')
+    else:
+        await message.answer('Активной рассылки у вас нет!❌')
+
+
+@router.callback_query(SetInterval.waiting_for_hours, F.data.isdigit())
+async def hours_button(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await callback.message.delete()
+    hours = int(callback.data)
+
+    chat_id2 = callback.message.chat.id
+
+    if chat_id2 in user_data:
+        user_data[chat_id2]["task"].cancel()
+
+    task = asyncio.create_task(periodic_sender(chat_id2, hours))
+    user_data[chat_id2] = {"interval_hours": hours, "task": task}
+
+    await callback.message.answer(
+        f"Теперь каждые {hours}ч. ты будешь получать курс бакса/прогноза💰☁"
+    )
+    await state.clear()
 
 @router.message(SetInterval.waiting_for_hours, F.text)
 async def process_hours(message: Message, state: FSMContext):
@@ -82,7 +120,7 @@ async def process_hours(message: Message, state: FSMContext):
     if chat_id in user_data:
         user_data[chat_id]["task"].cancel()
 
-    task = asyncio.create_task(pereodic_sender(chat_id, hours))
+    task = asyncio.create_task(periodic_sender(chat_id, hours))
     user_data[chat_id] = {"interval_hours": hours, "task": task}
 
     await message.answer(
